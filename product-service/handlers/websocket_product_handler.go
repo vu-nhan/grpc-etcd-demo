@@ -7,11 +7,10 @@ import (
 	"time"
 )
 
-type TCPProductHandler struct {
-	pb.UnimplementedProductServiceServer
+type WebSocketProductHandler struct {
 }
 
-func (h *TCPProductHandler) GetProductDetail(ctx context.Context, request *pb.GetProductDetailRequest) (*pb.GetProductDetailResponse, error) {
+func (h *WebSocketProductHandler) GetProductDetail(ctx context.Context, productId string) (*pb.GetProductDetailResponse) {
 	return &pb.GetProductDetailResponse{
 		Meta: &pb.Meta{
 			Code:    "1",
@@ -26,9 +25,10 @@ func (h *TCPProductHandler) GetProductDetail(ctx context.Context, request *pb.Ge
 			CreatedDate: time.Now().String(),
 			UpdatedDate: time.Now().String(),
 		},
-	}, nil
+	}
 }
 
-func NewTCPProductHandler() *TCPProductHandler {
-	return &TCPProductHandler{}
+func NewWebSocketProductHandler() *WebSocketProductHandler {
+	return &WebSocketProductHandler{}
 }
+

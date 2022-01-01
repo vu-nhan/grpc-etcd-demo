@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"product-service/handlers"
@@ -14,8 +19,15 @@ import (
 	"syscall"
 )
 
+const (
+	TCPNetwork = "tcp"
+	GrpcAddress = "localhost:7777"
+	TCPAddress = "localhost:8888"
+	WebSocketAddress = "localhost:9999"
+)
+
 func main()  {
-	grpcListener, err := net.Listen("tcp", "localhost:8081")
+	grpcListener, err := net.Listen(TCPNetwork, GrpcAddress)
 	if err != nil {
 		logrus.Errorf("Listener GRPC in Address has error: %s", err.Error())
 		panic(err)
@@ -40,7 +52,7 @@ func main()  {
 		}
 	}()
 
-	tcpListener, err := net.Listen("tcp", "localhost:8888")
+	tcpListener, err := net.Listen(TCPNetwork, TCPAddress)
 	if err != nil {
 		logrus.Errorf("Listener TCP in Address has error: %s", err.Error())
 		panic(err)
@@ -66,9 +78,49 @@ func main()  {
 				logrus.Errorf("Listen TCP error: %s", err.Error())
 			}
 		}
+	}()
 
+	go func() {
+		var upgrader = websocket.Upgrader{}
+		var addr = flag.String("", WebSocketAddress, "WebSocket address")
+		http.HandleFunc("/products", func(writer http.ResponseWriter, request *http.Request) {
+			connection, err := upgrader.Upgrade(writer, request, nil)
+			if err != nil {
+				log.Print("upgrade:", err)
+				return
+			}
+			defer connection.Close()
+			for {
+				messageType, message, err := connection.ReadMessage()
+				if err != nil {
+					logrus.Errorf("Read Message error: %s", err.Error())
+					break
+				}
+				logrus.Infof("Read Message successfully: %s", string(message))
+
+				request := &pb.GetProductDetailRequest{}
+				if err := proto.Unmarshal(message, request); err != nil {
+					logrus.Errorf("Cannot parse response from TCP Server: %s", err.Error())
+					panic(err)
+				}
+
+				webSocketProductHandler := handlers.NewWebSocketProductHandler()
+				response := webSocketProductHandler.GetProductDetail(context.Background(), "")
+				log.Printf("Recevie Message from order-service: %s", message)
+				err = connection.WriteMessage(messageType, getByte(response))
+				if err != nil {
+					log.Println("write:", err)
+					break
+				}
+			}
+		})
+		log.Fatal(http.ListenAndServe(*addr, nil))
 	}()
 
 	logrus.Error("Service error %s", <-errs)
+}
 
+func getByte(data *pb.GetProductDetailResponse) []byte {
+	response, _ := json.Marshal(data)
+	return response
 }

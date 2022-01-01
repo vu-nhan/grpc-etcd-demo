@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
+	"github.com/google/uuid"
 	pb "product-service/pb/generated"
+	"time"
 )
 
 type GrpcProductHandler struct {
@@ -16,13 +18,13 @@ func (h *GrpcProductHandler) GetProductDetail(ctx context.Context, request *pb.G
 			Message: "Successfully",
 		},
 		Data: &pb.Product{
-			Id:          "1234567",
+			Id:          uuid.New().String(),
 			Code:        "Product-code",
 			Name:        "Product-name",
 			Description: "Product-description",
 			Status:      "ACTIVE",
-			CreatedDate: "2021-01-01",
-			UpdatedDate: "2021-01-01",
+			CreatedDate: time.Now().String(),
+			UpdatedDate: time.Now().String(),
 		},
 	}, nil
 }

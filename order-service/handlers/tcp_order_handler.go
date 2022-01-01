@@ -14,7 +14,5 @@ func NewTcpOrderHandler() *TcpOrderHandler {
 }
 
 func (h *TcpOrderHandler) GetProductDetail(ctx context.Context, productId string) *pb.GetProductDetailResponse {
-	request := &pb.GetProductDetailRequest{ProductId: productId}
-
-
+	return nil
 }
